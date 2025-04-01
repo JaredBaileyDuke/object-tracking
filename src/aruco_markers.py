@@ -23,10 +23,6 @@ aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_50)
 parameters = aruco.DetectorParameters()
 detector = aruco.ArucoDetector(aruco_dict, parameters)
 
-"""
-SOLUTION FUNCTION 1:
-Define a function to capture a single frame from the webcam.
-"""
 
 def capture_frame():
     """
@@ -39,10 +35,6 @@ def capture_frame():
         raise Exception("Failed to capture image from webcam")
     return frame
 
-"""
-SOLUTION FUNCTION 2:
-Define a function to detect and annotate ArUco markers in a frame.
-"""
 
 def detect_markers(frame):
     """
@@ -61,10 +53,6 @@ def detect_markers(frame):
     
     return frame, ids
 
-"""
-SOLUTION FUNCTION 3:
-Define a function to run the ArUco marker detection loop.
-"""
 
 def run_aruco_detection():
     """
@@ -93,12 +81,6 @@ def run_aruco_detection():
     cap.release()
     cv2.destroyAllWindows()
 
-"""
-TEST FUNCTION:
-DO NOT REMOVE OR EDIT
-ANY CODE BELOW THIS LINE
-___________________
-"""
 
 def test_functions():
     """

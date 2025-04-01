@@ -20,7 +20,21 @@ Press 'q' to close the pop-up window
 ## Object Tracking
 
 #### Files for Use in Assets Folder
+- plane_short.mp4
 
+
+#### Run Script
+```bash
+python src/object_tracking.py
+```
+
+Look for the pop-up in order to select your object to track
+
+
+## Optical Flow
+
+#### Files for Use in Assets Folder
+- alligator_short.mp4
 
 #### Run Script
 ```bash
