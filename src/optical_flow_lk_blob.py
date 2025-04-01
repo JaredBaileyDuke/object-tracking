@@ -27,35 +27,51 @@ def get_user_drawn_features(frame):
 
     while True:
         temp = clone.copy()
-        # Draw all previously completed blobs
         for blob in all_blobs:
             if len(blob) >= 3:
                 cv2.polylines(temp, [np.array(blob)], isClosed=True, color=(0, 255, 0), thickness=2)
 
-        # Draw current blob in progress
         if len(current_blob) > 1:
             cv2.polylines(temp, [np.array(current_blob)], isClosed=False, color=(0, 255, 255), thickness=2)
 
         cv2.imshow("Draw Blobs - ESC=Done, Enter=Finish Blob", temp)
         key = cv2.waitKey(1)
 
-        if key == 13:  # Enter to finish current blob
+        if key == 13:  # Enter
             if len(current_blob) >= 3:
                 all_blobs.append(current_blob.copy())
             current_blob = []
-        elif key == 27:  # ESC to finish drawing
+        elif key == 27:  # ESC
             break
 
     cv2.destroyWindow("Draw Blobs - ESC=Done, Enter=Finish Blob")
 
-    # Create mask and extract features
     mask = np.zeros_like(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
     for blob in all_blobs:
         if len(blob) >= 3:
             cv2.fillPoly(mask, [np.array(blob)], 255)
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    p0 = cv2.goodFeaturesToTrack(gray, mask=mask, maxCorners=300, qualityLevel=0.3, minDistance=7)
+    p0 = cv2.goodFeaturesToTrack(
+        gray, mask=mask,
+        maxCorners=500,
+        qualityLevel=0.01,
+        minDistance=3
+    )
+
+    # Preview detected points
+    if p0 is not None:
+        preview = frame.copy()
+        for pt in p0:
+            x, y = pt.ravel()
+            cv2.circle(preview, (int(x), int(y)), 4, (255, 0, 0), -1)
+        cv2.imshow("Detected Features", preview)
+        print(f"✅ Detected {len(p0)} feature points. Press any key to start tracking...")
+        cv2.waitKey(0)
+        cv2.destroyWindow("Detected Features")
+    else:
+        print("⚠️ No feature points detected.")
+
     return p0
 
 def compute_optical_flow_webcam(cap, p0, gray_old):
@@ -72,13 +88,16 @@ def compute_optical_flow_webcam(cap, p0, gray_old):
         p1, st, err = cv2.calcOpticalFlowPyrLK(gray_old, gray_new, p0, None, **lk_params)
 
         if p1 is not None and st is not None:
-            for new, old in zip(p1[st == 1], p0[st == 1]):
+            good_new = p1[st == 1]
+            good_old = p0[st == 1]
+
+            for new, old in zip(good_new, good_old):
                 a, b = new.ravel()
                 c, d = old.ravel()
                 cv2.line(frame, (int(a), int(b)), (int(c), int(d)), (0, 255, 0), 2)
-                cv2.circle(frame, (int(a), int(b)), 5, (0, 0, 255), -1)
+                cv2.circle(frame, (int(a), int(b)), 4, (0, 0, 255), -1)
 
-            p0 = p1.reshape(-1, 1, 2)
+            p0 = good_new.reshape(-1, 1, 2)
             gray_old = gray_new.copy()
 
         cv2.imshow('Webcam Optical Flow', frame)
@@ -89,7 +108,7 @@ def compute_optical_flow_webcam(cap, p0, gray_old):
     cv2.destroyAllWindows()
 
 def main():
-    cap = cv2.VideoCapture(0)  # Open webcam
+    cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("Error: Could not open webcam.")
         return
@@ -103,8 +122,8 @@ def main():
     gray_old = cv2.cvtColor(first_frame, cv2.COLOR_BGR2GRAY)
     p0 = get_user_drawn_features(first_frame)
 
-    if p0 is None:
-        print("No features detected. Exiting.")
+    if p0 is None or len(p0) < 1:
+        print("❌ No usable features detected. Exiting.")
         cap.release()
         return
 
