@@ -38,5 +38,6 @@ Look for the pop-up in order to select your object to track
 
 #### Run Script
 ```bash
-python src/object_tracking.py
+python src/optical_flow_lk.py
+python src/optical_flow_f.py
 ```
