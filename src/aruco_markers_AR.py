@@ -55,7 +55,7 @@ def draw_pyramid(frame, rvec, tvec, camera_matrix, dist_coeffs):
 
 def draw_cube(frame, rvec, tvec, camera_matrix, dist_coeffs):
     """Draws a cube on the detected marker."""
-    size = 0.07  # Cube size larger than marker
+    size = 0.1  # Cube size larger than marker
     half = size / 2.0
 
     # Define 3D points of the cube
