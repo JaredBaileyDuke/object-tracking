@@ -32,16 +32,23 @@ def get_camera_calibration():
     return camera_matrix, dist_coeffs
 
 def draw_pyramid(frame, rvec, tvec, camera_matrix, dist_coeffs):
-    """Draws a regular pyramid on the detected marker."""
+    """Draws a regular pyramid hovering above the detected marker.
+
+    The pyramid base is offset above the marker plane by `hover` meters so
+    the object appears to float. Units are meters and should match the
+    `markerLength` used in pose estimation.
+    """
     size = 0.03  # Base size in meters
     h = size * 1.5  # Height of the pyramid
+    hover = 0.08  # vertical offset above the marker plane (meters)
 
-    # Define 3D points for pyramid base and tip
-    base = np.float32([[-size, -size, 0],
-                       [ size, -size, 0],
-                       [ size,  size, 0],
-                       [-size,  size, 0]])
-    tip = np.float32([[0, 0, h]])
+    # Define 3D points for pyramid base and tip. We add `hover` to Z so the
+    # whole pyramid is lifted above the marker plane (which is at Z=0).
+    base = np.float32([[-size, -size, hover],
+                       [ size, -size, hover],
+                       [ size,  size, hover],
+                       [-size,  size, hover]])
+    tip = np.float32([[0, 0, hover + h]])
     pts3d = np.vstack((base, tip))
 
     # Project 3D points to image plane
