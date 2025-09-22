@@ -8,6 +8,7 @@ ARUCO MARKER DETECTION WITH OPENCV
 import cv2
 import cv2.aruco as aruco
 import numpy as np
+import time
 
 def initialize_camera():
     """Initializes the webcam and checks for availability."""
@@ -40,19 +41,40 @@ def draw_pyramid(frame, rvec, tvec, camera_matrix, dist_coeffs):
     """
     size = 0.03  # Base size in meters
     h = size * 1.5  # Height of the pyramid
-    hover = 0.08  # vertical offset above the marker plane (meters)
+    hover_max = 0.08  # maximum vertical offset above the marker plane (meters)
 
-    # Define 3D points for pyramid base and tip. We add `hover` to Z so the
-    # whole pyramid is lifted above the marker plane (which is at Z=0).
-    base = np.float32([[-size, -size, hover],
-                       [ size, -size, hover],
-                       [ size,  size, hover],
-                       [-size,  size, hover]])
-    tip = np.float32([[0, 0, hover + h]])
+    # Oscillate hover between 0 and hover_max using a sine wave so the
+    # pyramid bobs up and down. `freq` is cycles per second.
+    freq = 0.5  # Hz (one full up-and-down every 2 seconds)
+    t = time.time()
+    # sine varies -1..1, map to 0..1 then scale by hover_max
+    hover_current = (0.5 * (1.0 + np.sin(2.0 * np.pi * freq * t))) * hover_max
+
+    # Define 3D points for pyramid base and tip. We add `hover_current` to Z
+    # so the whole pyramid is lifted above the marker plane (which is at Z=0).
+    base = np.float32([[-size, -size, hover_current],
+                       [ size, -size, hover_current],
+                       [ size,  size, hover_current],
+                       [-size,  size, hover_current]])
+    tip = np.float32([[0, 0, hover_current + h]])
     pts3d = np.vstack((base, tip))
 
+    # --- Spin the pyramid around the marker's local Z axis ---
+    # Compute a time-based rotation angle (radians). Adjust `deg_per_sec`
+    # to change spin speed. The rotation is applied in the marker coordinate
+    # system (so origin is marker center).
+    deg_per_sec = 45.0  # degrees per second
+    angle_rad = (time.time() * deg_per_sec % 360) * (np.pi / 180.0)
+    c = np.cos(angle_rad)
+    s = np.sin(angle_rad)
+    R2 = np.array([[c, -s], [s, c]], dtype=np.float32)
+
+    # Rotate only the X,Y columns; Z remains unchanged
+    pts3d_rot = pts3d.copy()
+    pts3d_rot[:, :2] = pts3d[:, :2].dot(R2.T)
+
     # Project 3D points to image plane
-    pts2d, _ = cv2.projectPoints(pts3d, rvec, tvec, camera_matrix, dist_coeffs)
+    pts2d, _ = cv2.projectPoints(pts3d_rot, rvec, tvec, camera_matrix, dist_coeffs)
     pts2d = np.int32(pts2d).reshape(-1, 2)
 
     # Draw pyramid edges
